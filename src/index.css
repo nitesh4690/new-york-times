@@ -7,9 +7,9 @@
 
 /* ---------- Design tokens ---------- */
 :root {
-  --font-display: 'Anton', 'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif;
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-body: 'Inter', Georgia, 'Times New Roman', serif;
+  --font-display: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Lato', Georgia, 'Times New Roman', serif;
 
   --bg: #f6f4f1;
   --bg-elevated: #ffffff;
