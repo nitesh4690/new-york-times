@@ -155,6 +155,7 @@ const PROXIES = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
   (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
 ];
 
 async function fetchWithProxy(url, timeoutMs = 15000) {
@@ -362,20 +363,41 @@ function applyFlags(sorted) {
   }
 }
 
+async function fetchAllRss() {
+  const groups = await Promise.all(Object.keys(SOURCES).map((slug) => fetchCategory(slug)));
+  const seen = new Map();
+  groups.flat().forEach((article) => {
+    if (!seen.has(article.sourceUrl)) seen.set(article.sourceUrl, article);
+  });
+  return [...seen.values()];
+}
+
 export async function fetchLiveNews() {
   let articles = [];
-  let provider = 'rss';
+  let provider = null;
 
+  // 1) Primary: NewsAPI.org — only used when a key was baked in at build
+  //    time (VITE_NEWSAPI_KEY from .env / .env.production). Individual
+  //    category failures already degrade to []; if the whole call returns
+  //    nothing (invalid key, free-plan origin rejection on a public
+  //    domain, daily quota hit, network error…), we smoothly move on.
   if (NEWSAPI_KEY) {
-    articles = await fetchNewsApi(NEWSAPI_KEY);
-    provider = 'newsapi';
-  } else {
-    const groups = await Promise.all(Object.keys(SOURCES).map((slug) => fetchCategory(slug)));
-    const seen = new Map();
-    groups.flat().forEach((article) => {
-      if (!seen.has(article.sourceUrl)) seen.set(article.sourceUrl, article);
-    });
-    articles = [...seen.values()];
+    try {
+      const newsApiArticles = await fetchNewsApi(NEWSAPI_KEY);
+      if (newsApiArticles.length) {
+        articles = newsApiArticles;
+        provider = 'newsapi';
+      }
+    } catch (err) {
+      console.warn('[News] NewsAPI failed; falling back to RSS:', err.message || err);
+    }
+  }
+
+  // 2) Fallback: RSS feeds via public CORS proxies — zero-config and
+  //    free, so production stays live even when NewsAPI cannot be used.
+  if (!articles.length) {
+    provider = 'rss';
+    articles = await fetchAllRss();
   }
 
   if (!articles.length) {

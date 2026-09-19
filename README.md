@@ -44,6 +44,25 @@ npm run dev
 > NewsAPI's free plan allows development use on `localhost` only. For a public
 > deployment, use the default RSS source (no key) or a paid NewsAPI plan.
 
+### Production builds & deployments
+
+- `.env.production` (committed to git) holds `VITE_NEWSAPI_KEY`. Vite loads it
+  automatically for `npm run build`, so production deployments always get the
+  key even if the gitignored local `.env` is absent or not pushed.
+- `fetchLiveNews()` now falls back automatically:
+  **NewsAPI (if key) → RSS feeds → saved edition**. If NewsAPI rejects the
+  request (e.g. free plan used from a public domain), the site streams the
+  live BBC / Guardian feeds instead of showing stale content.
+- Build and ship `dist/`:
+  ```bash
+  npm run build      # → dist/ (embeds the .env.production key)
+  npm run preview    # test the production build locally
+  ```
+  Then upload `dist/` to any static host (Netlify, Vercel, Cloudflare Pages,
+  XAMPP/Apache…). Remember the SPA re-write rule so deep links like
+  `/article/…` don't 404 (see the host's docs; e.g. Netlify `_redirects`
+  with `/* /index.html 200`).
+
 ## Project structure
 
 ```
